@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MGAHS Phil-IRI - Grade 10</title>
+    <style>
+        :root { --ahs-blue:#1a237e; --ahs-silver:#e0e0e0; --ans-green: #28a745; --frust-red: #dc3545; --inst-blue: #007bff; }
+        body { font-family:'Segoe UI', sans-serif; background:#f0f2f5; margin:0; padding:10px; display:flex; flex-direction: column; align-items:center; }
+        .container { background:white; max-width:900px; width:100%; padding:25px; border-radius:15px; box-shadow:0 8px 30px rgba(0,0,0,0.1); margin-top: 20px; }
+        
+        #loader-ui { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background: var(--ahs-blue); z-index: 1000; flex-direction: column; justify-content: center; align-items: center; color: white; text-align: center; }
+        .spinner { width: 60px; height: 60px; border: 6px solid var(--ahs-silver); border-top: 6px solid transparent; border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 20px; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        .school-header { text-align:center; border-bottom:3px solid var(--ahs-blue); padding-bottom:10px; margin-bottom:20px; }
+        .school-name { font-size:1.6rem; font-weight:bold; color:var(--ahs-blue); margin:0; }
+        .assessment-title { font-size:1rem; font-weight:bold; color:white; background:var(--ahs-blue); padding:5px 20px; border-radius:5px; display:inline-block; }
+        
+        #timer-bar { background: #222; color: white; width: 100%; max-width: 900px; padding: 12px 20px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; box-sizing: border-box; }
+        .nav-grid { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 20px; justify-content: center; background: #f8f9fa; padding: 12px; border-radius: 10px; }
+        .nav-dot { width: 40px; height: 35px; border-radius: 5px; border: 1px solid #ccc; background: #fff; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: bold; }
+        .nav-dot.active { border: 2.5px solid var(--ahs-blue); background: #e8eaf6; }
+        .nav-dot.answered { background: var(--ans-green); color: white; border-color: #1e7e34; }
+        
+        #storyBox { background:#fff; border:2px solid var(--ahs-blue); padding:20px; margin-bottom: 20px; line-height: 1.7; white-space: pre-line; max-height: 500px; overflow-y: auto; border-radius: 8px; font-size: 1.05rem; }
+        .story-img { max-width: 100%; height: auto; display: block; margin: 10px auto; border-radius: 5px; }
+
+        .choice { display:block; width: 100%; margin: 8px 0; padding: 12px 20px; background: #fff; border: 1.5px solid #ddd; border-radius: 10px; cursor: pointer; text-align: left; font-size: 1rem; transition: 0.2s; }
+        .choice.selected { border-color: var(--ahs-blue); background: #e8eaf6; font-weight: bold; box-shadow: inset 4px 0 0 var(--ahs-blue); }
+        
+        .result-table { width: 100%; border-collapse: collapse; margin: 20px 0; font-size: 1.1rem; }
+        .result-table td { padding: 12px; border-bottom: 1px solid #eee; }
+        .level-tag { display: inline-block; padding: 10px 20px; border-radius: 5px; color: white; font-weight: bold; margin-top: 10px; }
+
+        .btn-nav { padding: 12px 25px; background: var(--ahs-blue); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; }
+        .btn-primary { background:var(--ahs-blue); color:white; padding:15px; border-radius:50px; cursor:pointer; border:none; font-weight:bold; width:100%; margin-top:15px; font-size: 1rem; }
+        
+        .row { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; width: 100%; }
+        .field { display: flex; flex-direction: column; margin-bottom: 10px; }
+        .field label { font-size: 12px; font-weight: bold; color: var(--ahs-blue); }
+        .field input, .field select { padding: 10px; border: 1px solid #ccc; border-radius: 5px; }
+
+        #quiz-ui, #results-ui, #front-page { display: none; width: 100%; flex-direction: column; align-items: center; }
+        #front-page { display: flex; }
+    </style>
+</head>
+<body>
+
+<div id="loader-ui">
+    <div class="spinner"></div>
+    <h2 id="loader-text">Loading...</h2>
+    <p>Please wait a moment.</p>
+</div>
+
+<div class="container" id="front-page">
+    <div class="school-header">
+        <p class="school-name">Manuel G. Araullo High School</p>
+        <p class="assessment-title">GST - GRADE 10</p>
+    </div>
+    <div class="row">
+        <div class="field"><label>Surname</label><input type="text" id="surname" placeholder="Last Name"></div>
+        <div class="field"><label>First Name</label><input type="text" id="firstname" placeholder="First Name"></div>
+    </div>
+    <div class="row">
+        <div class="field">
+            <label>Gender</label>
+            <select id="gender"><option value="">Select</option><option value="Male">Male</option><option value="Female">Female</option></select>
+        </div>
+        <div class="field"><label>Section</label><input type="text" id="section"></div>
+    </div>
+    <div class="row">
+        <div class="field"><label>LRN</label><input type="text" id="lrn"></div>
+    </div>
+    <button class="btn-primary" onclick="startTest()">START ASSESSMENT</button>
+</div>
+
+<div id="quiz-ui">
+    <div id="timer-bar"><span id="part-label">PART A</span><span id="timer">60:00</span></div>
+    <div class="container">
+        <div class="nav-grid" id="navGrid"></div>
+        <div id="storyBox"></div>
+        <div class="item-label" id="itemNum" style="font-weight:bold; color:var(--ahs-blue)">ITEM #1</div>
+        <div id="questionBox" style="margin-bottom: 15px; font-size: 1.1rem;"></div>
+        <div id="choices"></div>
+        <div style="display:flex; justify-content:space-between; margin-top:20px;">
+            <button class="btn-nav" id="prevBtn" onclick="changeQ(-1)">Previous</button>
+            <button class="btn-nav" onclick="changeQ(1)" id="nextBtn">Next Item</button>
+        </div>
+    </div>
+</div>
+
+<div class="container" id="results-ui">
+    <h2 style="color:var(--ahs-blue); text-align: center;">Summary of Scores</h2>
+    <table class="result-table">
+        <tr><td>Part A: Still I Rise</td><td id="res-A">0 / 10</td></tr>
+        <tr><td>Part B: Mental Health, Too</td><td id="res-B">0 / 10</td></tr>
+        <tr><td>Part C: Arachne</td><td id="res-C">0 / 10</td></tr>
+        <tr><td>Part D: Agri-Reform Agenda</td><td id="res-D">0 / 10</td></tr>
+        <tr style="border-top: 2px solid var(--ahs-blue); font-weight: bold;"><td>Total Score</td><td id="res-total">0 / 40</td></tr>
+    </table>
+    <div style="text-align: center;">
+        <p>Comprehension Level:</p>
+        <div id="comp-level" class="level-tag">N/A</div>
+    </div>
+    <button class="btn-primary" onclick="location.reload()" style="width: 200px; margin-top: 20px;">Return Home</button>
+</div>
+
+<script>
+const scriptURL = 'https://script.google.com/macros/s/AKfycby1NJF9YuuMY2lyJ_Q1AmtvGzdo3brDj2kH-JN8b4xE7WDXw-09ZtF-YzrH_e7_MQw/exec';
+
+const DATA = {
+    stories: {
+        A: `Still I Rise\nBy Maya Angelou\n\nYou may write me down in history\nWith your bitter, twisted lies,\nYou may tread me in the very dirt,\nBut still, like dust, I’ll rise.\n\nDoes my sassiness upset you?\nWhy are you beset with gloom?\n’Cause I walk like I’ve got oil wells\nPumping in my living room.\n\nJust like moons and like suns,\nWith the certainty of tides,\nJust like hopes springing high,\nStill I’ll rise.\n\nDid you want to see me broken?\nBowed head and lowered eyes?\nShoulders falling like teardrops,\nWeakened by my soulful cries?\n\nDoes my haughtiness offend you?\nDon’t you take it awful hard?\n’Cause I laugh like I’ve got gold mines\nDiggin’ in my own backyard.\n\nYou may shoot me with your words,\nYou may cut me with your eyes,\nYou may kill me with your hatefulness,\nBut still, like air, I’ll rise.\n\nDoes my sexiness upset you?\nDoes it come as a surprise\nThat I dance like I’ve got diamonds\nAt the meeting of my thighs?\n\nOut of the huts of history’s shame, I rise,\nUp from a past that’s rooted in pain, I rise.\nI’m a black ocean, leaping and wide,\nWelling and swelling I bear in the tide.\n\nLeaving behind nights of terror and fear, I rise,\nInto a daybreak that’s wondrously clear, I rise.\nBringing the gifts that my ancestors gave,\nI am the dream and the hope of the slave.\n\nI rise.\nI rise.\nI rise.`,
+        B: `B. Mental Health, Too
+Prevention is better than cure. Mental health comprises our
+emotional, psychological, and social well-being. It impacts how we feel, think,
+and behave every day. Additionally, it is our capacity to make choices, form
+connections, and influence the environment in which we live. It is a
+fundamental human right. Furthermore, it is essential for our socioeconomic and
+personal growth.
+ 
+Mental health is important because it affects everything. By
+taking care of it, we can be resilient and recover quickly from anything.
+Anyone can have a miserable day, but that does not necessarily indicate that
+their life is horrible. The important thing is how we handle it and sustain our
+mental well-being.
+ 
+When our minds are in good shape, we appreciate our lives,
+our surroundings, and the people that inhabit them. We can take risks, learn
+new things, and innovate. We are better equipped to handle challenging
+situations in both our work and personal life. We may experience pain and
+frustration from a loved one’s passing, job loss, and other difficult
+situations, but eventually, we are able to move on and resume enjoying our
+lives.
+ 
+Mental illness is common. It can happen at any age, from
+childhood to later adulthood, although most cases start at a younger age. It
+can have short-term or long-term effects. It is also possible to experience
+multiple mental health disorders at the same time.
+ 
+You may be more likely to have a mental disorder if you have
+certain risk factors, such as:
+ 
+· childhood abuse, trauma, or neglect
+· experiencing discrimination and racism
+· losing someone close to you
+· severe or long-term stress
+· domestic violence
+· bullying or other abuse as an adult
+· having a long-term physical health condition
+· unemployment or job loss
+· other lifestyle factors
+ 
+According to the World Health Organization (WHO), among
+Filipino children aged 5 to 15, 10% to 15% are affected by mental health
+problems, and 6.8% of Filipino students aged 13 to 17 have attempted suicide at
+least once within the year before the 2015 Global School-based Student Health
+Survey.
+ 
+Untreated mental illness can cause serious issues with
+emotion, behavior, and physical health. These problems may include:
+ 
+· unhappiness and decreased enjoyment of life
+· family conflicts
+· social isolation
+· problems with alcohol and other drugs
+· missed work or school
+· suicide
+· To prevent this, we should:
+· build social connections
+· talk to someone we trust
+· get enough sleep
+· eat a healthy diet
+· exercise regularly
+· learn new skills
+· meditate daily
+· ask for help when needed`,
+        C: `Arachne\nFrom Greek Mythology\n\nIn the kingdom of Lydia, there lived a girl named Arachne. She was very good at weaving, and her reputation for embroidery soon spread. Athena, the goddess of spinners and embroiderers, was considered by many to have been Arachne’s tutor, but Arachne refused to give the goddess any credit for having taught her how to weave so beautifully.\n\nIndeed, so sure of her own weaving abilities was she that Arachne boldly challenged Athena to a weaving contest. Athena turned up in disguise as an old woman, advising the young weaver to be more modest about her achievements. Arachne was scornful, so Athena—angered by the girl’s arrogance—revealed her true identity and accepted the challenge Arachne had proposed.\n\nThe two competitors chose the subject of their tapestries with care: while Athena showed the twelve Olympian gods in hers, she wove in a little detail in each of the four corners, showing what happens to uppity mortals who think they can defy the gods. Conversely, Arachne depicted the most outrageous things the gods had got up to—in particular, Zeus’s track record in seducing or abducting young maidens to satisfy his own lust.\n\nArachne’s work was perfect, and Athena had to admit it. But, being a goddess, she did not have to like it. What is the use of being a deity if you cannot throw your weight about from time to time? So, Athena tore up Arachne’s beautiful work and struck her down. Arachne was so downcast by this that she hanged herself.\n\nAthena was vindictive and refused to give Arachne peace in death. So, she turned the dead girl into a spider, so that she would be doomed to weave and spin for all time.`,
+        D: `Grade10_D.png`
+    },
+    ans: ["B","C","C","A","A","C","B","A","D","C","B","D","C","B","A","D","A","A","C","B","C","A","B","C","B","C","D","C","B","B","D","D","C","B","D","A","A","B","B","C"],
+    questions: [
+        /* 1-10 */
+        { q:"What upsets the one addressed by the persona in the poem?", a:"the persona’s arrogance", b:"the persona’s boldness", c:"the persona’s rudeness", d:"the persona’s weakness" },
+        { q:"What does trod in the first stanza mean?", a:"bend over", b:"blow over", c:"step over", d:"take over" },
+        { q:"Which of the following is implied about the persona?", a:"The persona is a dancer.", b:"The persona is a slave.", c:"The persona is black.", d:"The persona is rich." },
+        { q:"Which line contains a figure of speech?", a:"But still, like dust, I’ll rise.", b:"Because I walk like I’ve got oil wells", c:"Does my haughtiness offend you?", d:"Leaving behind nights of terror and fear" },
+        { q:"What is the general tone of the poem?", a:"defiant", b:"doubtful", c:"happy", d:"optimistic" },
+        { q:"What is the rhyming pattern evident in the first stanza?", a:"AABC", b:"ABBC", c:"ABCB", d:"ABCA" },
+        { q:"To what sense do the lines “Into a daybreak that’s wondrously clear” appeal?", a:"hearing", b:"sight", c:"smell", d:"touch" },
+        { q:"What relationship is evident between the persona and the listener?", a:"a bully to a bullied", b:"a defender to an ally", c:"a friend to a friend", d:"a leader to a follower" },
+        { q:"Who are being addressed in the poem?", a:"Those who experienced being abused.", b:"Those who felt extremely depressed.", c:"Those who lost interest in their lives.", d:"Those who were not appreciated." },
+        { q:"Which technique did the author use in emphasizing the theme?", a:"Metaphors only", b:"Rhyme in every stanza", c:"Repetition of significant lines", d:"Third person narration" },
+        /* 11-20 */
+        { q:"Which of the following statements defines mental health?", a:"Positive interpersonal relationships.", b:"Ability to make sound decisions and form connections.", c:"Condition of the body from physical activity.", d:"Participation in social organizations." },
+        { q:"Which pertain to risk factors? (I. abuse, II. trauma, V. discrimination, VI. loss)", a:"I, II, III & IV", b:"I, II, III & V", c:"I, II, VI & V", d:"I, II, V & VI" },
+        { q:"Which situation is influenced by a mind in good shape?", a:"Being dependent on comfort food", b:"Getting compliments from peers", c:"Identifying de-stressing activity", d:"Isolating self from social media" },
+        { q:"Which factor: 'A person suffers from physical pain due to beating done by spouse'?", a:"child abuse", b:"domestic violence", c:"long-term stress", d:"unemployment" },
+        { q:"Analogy: Enough sleep : Healthy mind : ________________ : Mental illness", a:"lack of sleep", b:"over-eating", c:"drug abuse", d:"unhealthy diet" },
+        { q:"What does 'empathetic' mean in the text?", a:"appreciative", b:"encouraging", c:"responsible", d:"understanding" },
+        { q:"Which is true based on the text?", a:"Untreated illness causes serious issues.", b:"Impossible to have multiple disorders.", c:"Enjoyment arises from illness.", d:"Wellness is achieved from family conflicts." },
+        { q:"What is the purpose of the last paragraph?", a:"to call for action", b:"to further explain", c:"to provide conclusions", d:"to summarize" },
+        { q:"How did the writer organize the ideas?", a:"Describing steps", b:"Enumerating examples", c:"Listing important info", d:"Providing suggestions" },
+        { q:"What is the general tone of the article?", a:"anxious", b:"didactic", c:"sad", d:"serious" },
+        /* 21-30 */
+        { q:"Which word is the opposite of 'arrogance'?", a:"bold", b:"disguise", c:"modest", d:"scornful" },
+        { q:"What does Arachne’s weaving show?", a:"abuses made by the gods", b:"naughtiness of the gods", c:"rudeness of the gods", d:"weaknesses of the gods" },
+        { q:"What does the selection intend to accomplish?", a:"Explain a phenomenon", b:"Narrate an origin", c:"Teach a lesson", d:"Tell an exaggerated story" },
+        { q:"Why did Athena become angry with Arachne?", a:"Arachne's beauty", b:"Arachne's skill/arrogance", c:"Arachne's tapestry subjects", d:"Arachne's rare works" },
+        { q:"Which is NOT a characteristic of Arachne?", a:"Confident", b:"Disobedient", c:"Talented", d:"Ungrateful" },
+        { q:"Which is similar in purpose to this selection?", a:"Fable", b:"Folktale", c:"Legend", d:"Parable" },
+        { q:"Which best describes the theme?", a:"acceptance/anger", b:"humility/obedience", c:"pride/humility/power", d:"vengeance/anger" },
+        { q:"What is implied about the Greek gods?", a:"Immortal with powers", b:"Immortal but emotional", c:"Assert power over humans", d:"Feel superior" },
+        { q:"What does the selection intend to accomplish? (Alt)", a:"Explain phenomenon", b:"Narrate origin", c:"Teach lesson", d:"Exaggerate story" },
+        { q:"Which does NOT apply to the selection?", a:"Talents are given by God.", b:"Better to be humble than talented.", c:"Be humble in victory.", d:"Know how to accept defeat." },
+        /* 31-40 */
+        { q:"Which is NOT a key strategy for Industrialization?", a:"Agri-Business Corridors", b:"Export Promotion", c:"Logistics Support", d:"Technology and Innovation" },
+        { q:"To which pillar does strategic communications belong?", a:"Consolidation", b:"Industrialization", c:"Modernization", d:"Professionalization" },
+        { q:"Which best describes modernization?", a:"High-value crops", b:"Online channels", c:"Digital databases", d:"Procurement systems" },
+        { q:"Who are the direct beneficiaries of the reform agenda?", a:"Drivers", b:"Farmers", c:"Hunters", d:"Sellers" },
+        { q:"What is the infographic all about?", a:"Agri-business ease", b:"Life of fisherfolk", c:"Modernization", d:"Programs for agriculture" },
+        { q:"What does 'together with partners' mean?", a:"Cooperating with private companies", b:"Finding business partners", c:"Uniting as one", d:"Working with farmers" },
+        { q:"Consequence of 'a food-secure and resilient Philippines'?", a:"Enough food for families", b:"Healthier families", c:"More opportunities", d:"Hardworking farmers" },
+        { q:"What is the purpose of the DA in creating this?", a:"Prioritize industry", b:"Communicate strategic plans", c:"Explain accomplishments", d:"Persuade readers" },
+        { q:"How were the topics arranged?", a:"Chronologically", b:"Logically", c:"Randomly", d:"Structurally" },
+        { q:"Which best describes the infographic?", a:"Authentic", b:"Complete", c:"Relevant", d:"Updated" }
+    ]
+};
+
+let userAnswers = new Array(40).fill(null);
+let curIdx = 0;
+let timerSeconds = 3600;
+
+function startTest() {
+    if(!document.getElementById('surname').value || !document.getElementById('firstname').value) return alert("Please enter your name.");
+    document.getElementById('front-page').style.display = 'none';
+    document.getElementById('quiz-ui').style.display = 'flex';
+    updateUI();
+    setInterval(() => {
+        if(timerSeconds <= 0) return;
+        timerSeconds--;
+        let m = Math.floor(timerSeconds/60), s = timerSeconds%60;
+        document.getElementById('timer').innerText = m + ":" + (s < 10 ? "0" + s : s);
+    }, 1000);
+}
+
+function updateUI() {
+    const sBox = document.getElementById('storyBox');
+    const grid = document.getElementById('navGrid');
+    let start = 0, end = 9, storyKey = 'A', partName = "PART A";
+    
+    if (curIdx >= 10 && curIdx < 20) { start = 10; end = 19; storyKey = 'B'; partName = "PART B"; }
+    else if (curIdx >= 20 && curIdx < 30) { start = 20; end = 29; storyKey = 'C'; partName = "PART C"; }
+    else if (curIdx >= 30) { start = 30; end = 39; storyKey = 'D'; partName = "PART D"; }
+
+    document.getElementById('part-label').innerText = partName;
+
+    if(storyKey === 'D') {
+        sBox.innerHTML = `<p style="font-weight:bold; text-align:center;">Analyze the infographic below:</p>
+                          <img src="${DATA.stories.D}" class="story-img" alt="Agri-Reform Infographic">`;
+    } else {
+        sBox.innerText = DATA.stories[storyKey];
+    }
+
+    grid.innerHTML = "";
+    for(let i = start; i <= end; i++) {
+        let d = document.createElement('div');
+        d.className = `nav-dot ${i === curIdx ? 'active' : ''} ${userAnswers[i] ? 'answered' : ''}`;
+        d.innerText = i + 1;
+        d.onclick = () => { curIdx = i; updateUI(); };
+        grid.appendChild(d);
+    }
+
+    const q = DATA.questions[curIdx];
+    document.getElementById('itemNum').innerText = "ITEM #" + (curIdx + 1);
+    document.getElementById('questionBox').innerText = q.q;
+    const cBox = document.getElementById('choices'); cBox.innerHTML = "";
+    ['a','b','c','d'].forEach(l => {
+        let btn = document.createElement('button');
+        btn.className = `choice ${userAnswers[curIdx] === l.toUpperCase() ? 'selected' : ''}`;
+        btn.innerText = `${l.toUpperCase()}. ${q[l]}`;
+        btn.onclick = () => { userAnswers[curIdx] = l.toUpperCase(); updateUI(); };
+        cBox.appendChild(btn);
+    });
+
+    document.getElementById('prevBtn').style.visibility = (curIdx === start) ? "hidden" : "visible";
+    document.getElementById('nextBtn').innerText = (curIdx === end) ? (curIdx === 39 ? "Submit Assessment" : "Next Part") : "Next Item";
+}
+
+function changeQ(dir) {
+    if(dir === 1 && (curIdx === 9 || curIdx === 19 || curIdx === 29)) { showLoader(); return; }
+    if(dir === 1 && curIdx === 39) return submit();
+    curIdx += dir; updateUI();
+}
+
+function showLoader() {
+    const loader = document.getElementById('loader-ui');
+    loader.style.display = 'flex';
+    document.getElementById('loader-text').innerText = "Part Completed!";
+    setTimeout(() => { loader.style.display = 'none'; curIdx++; updateUI(); }, 3000);
+}
+
+function submit() {
+    if(!confirm("Submit final answers?")) return;
+
+    let s = { A:0, B:0, C:0, D:0, Total:0 };
+    userAnswers.forEach((ans, i) => {
+        if(ans === DATA.ans[i]) {
+            s.Total++;
+            if(i < 10) s.A++; else if(i < 20) s.B++; else if(i < 30) s.C++; else s.D++;
+        }
+    });
+
+    const percent = (s.Total / 40) * 100;
+    let level = percent >= 80 ? "INDEPENDENT" : (percent >= 59 ? "INSTRUCTIONAL" : "FRUSTRATION");
+
+    const payload = {
+        surname: document.getElementById('surname').value,
+        firstname: document.getElementById('firstname').value,
+        gender: document.getElementById('gender').value,
+        section: document.getElementById('section').value,
+        lrn: document.getElementById('lrn').value,
+        scoreA: s.A,
+        scoreB: s.B,
+        scoreC: s.C,
+        scoreD: s.D,
+        total: s.Total,
+        level: level
+    };
+
+    document.getElementById('loader-ui').style.display = 'flex';
+    document.getElementById('loader-text').innerText = "Uploading Results...";
+
+    fetch(scriptURL, {
+        method: 'POST',
+        mode: 'no-cors',
+        cache: 'no-cache',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+    }).then(() => {
+        document.getElementById('loader-ui').style.display = 'none';
+        document.getElementById('res-A').innerText = s.A + " / 10";
+        document.getElementById('res-B').innerText = s.B + " / 10";
+        document.getElementById('res-C').innerText = s.C + " / 10";
+        document.getElementById('res-D').innerText = s.D + " / 10";
+        document.getElementById('res-total').innerText = s.Total + " / 40";
+        const tag = document.getElementById('comp-level');
+        tag.innerText = level;
+        tag.style.background = level === "INDEPENDENT" ? "var(--ans-green)" : (level === "INSTRUCTIONAL" ? "var(--inst-blue)" : "var(--frust-red)");
+        document.getElementById('quiz-ui').style.display = 'none';
+        document.getElementById('results-ui').style.display = 'flex';
+    }).catch(e => alert("Error: " + e));
+}
+</script>
+</body>
+</html>
